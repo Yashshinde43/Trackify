@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { getLowestPrice, getHighestPrice, getAveragePrice, getEmailNotifType } from "@/lib/utils";
+import { getLowestPrice, getHighestPrice, getAveragePrice } from "@/lib/utils";
 import { connectToDB } from "@/lib/mongoose";
 import Product from "@/lib/models/product.model";
 import { scrapeAmazonProduct } from "@/lib/scraper";
-import { generateEmailBody, sendEmail } from "@/lib/nodemailer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -46,20 +45,6 @@ export async function GET(request: Request) {
                         { new: true } // Return the updated document
                     );
 
-                    const emailNotifType = getEmailNotifType(scrapedProduct, currentProduct);
-
-                    if (emailNotifType && updatedProduct.users.length > 0) {
-                        const productInfo = {
-                            title: updatedProduct.title,
-                            url: updatedProduct.url,
-                        };
-
-                        const emailContent = await generateEmailBody(productInfo, emailNotifType);
-                        const userEmails = updatedProduct.users.map((user: any) => user.email);
-
-                        await sendEmail(emailContent, userEmails);
-                    }
-
                     return updatedProduct;
                 })
             );
@@ -71,6 +56,6 @@ export async function GET(request: Request) {
             data: updatedProducts.filter(Boolean), // Remove any null or undefined values
         });
     } catch (error: any) {
-        throw new Error(`Failed to get all products: ${error.message}`);
+        throw new Error(`Failed to update products: ${error.message}`);
     }
 }
